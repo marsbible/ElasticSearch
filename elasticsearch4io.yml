@@ -1,0 +1,143 @@
+# ======================== Elasticsearch Configuration =========================
+#
+# NOTE: Elasticsearch comes with reasonable defaults for most settings.
+#       Before you set out to tweak and tune the configuration, make sure you
+#       understand what are you trying to accomplish and the consequences.
+#
+# The primary way of configuring a node is via this file. This template lists
+# the most important settings you may want to configure for a production cluster.
+#
+# Please see the documentation for further information on configuration options:
+# <http://www.elastic.co/guide/en/elasticsearch/reference/current/setup-configuration.html>
+#
+# ---------------------------------- Cluster -----------------------------------
+#
+# Use a descriptive name for your cluster:
+#
+cluster.name: es-main
+#
+# ------------------------------------ Node ------------------------------------
+#
+# Use a descriptive name for the node:
+#
+node.name: data-node-001
+#
+# Add custom attributes to the node:
+#
+# node.rack: r1
+#
+
+node.master: false
+node.data: true
+
+# ----------------------------------- Paths ------------------------------------
+#
+# Path to directory where to store the data (separate multiple locations by comma):
+#
+path.data: /data/elasticsearch
+#
+# Path to log files:
+#
+# path.logs: /path/to/logs
+#
+# ----------------------------------- Memory -----------------------------------
+#
+# Lock the memory on startup:
+# 锁定内存，设置成true后es分配的内存都会被锁定到内存，不会被交换，保证系统性能的平稳
+bootstrap.mlockall: true
+#
+# Make sure that the `ES_HEAP_SIZE` environment variable is set to about half the memory
+# available on the system and that the owner of the process is allowed to use this limit.
+#
+# Elasticsearch performs poorly when the system is swapping the memory.
+#
+# ---------------------------------- Network -----------------------------------
+#
+# Set the bind address to a specific IP (IPv4 or IPv6):
+#
+network.host: 0.0.0.0
+#
+# Set a custom port for HTTP:
+#
+http.port: 9200
+#
+# For more information, see the documentation at:
+# <http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-network.html>
+#
+# --------------------------------- Discovery ----------------------------------
+#
+# Pass an initial list of hosts to perform discovery when new node is started:
+# The default list of hosts is ["127.0.0.1", "[::1]"]
+#
+discovery.zen.ping.unicast.hosts: ["10.1.1.1","10.1.1.2","10.1.1.3","10.1.1.4"]
+#
+# Prevent the "split brain" by configuring the majority of nodes (total number of nodes / 2 + 1):
+#
+discovery.zen.minimum_master_nodes: 3
+#
+# For more information, see the documentation at:
+# <http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-discovery.html>
+#
+# ---------------------------------- Gateway -----------------------------------
+#
+# Block initial recovery after a full cluster restart until N nodes are started:
+#
+# gateway.recover_after_nodes: 3
+#
+# For more information, see the documentation at:
+# <http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-gateway.html>
+#
+# ---------------------------------- Various -----------------------------------
+#
+# Disable starting multiple nodes on a single system:
+#
+# node.max_local_storage_nodes: 1
+#
+# Require explicit names when deleting indices:
+#
+# action.destructive_requires_name: true
+#
+#
+#for search operation
+#搜索线程池配置，一般使用fixed类型的线程池保证平稳，大小根据实际情况配置
+threadpool.search.type: fixed
+threadpool.search.size: 40
+threadpool.search.queue_size: 800
+ 
+#for bulk operations
+#bulk线程池配置，bulk操作比较多的可以适当增加队列大小
+threadpool.bulk.type: fixed
+threadpool.bulk.queue_size: 900
+ 
+#for indexing operations
+#索引线程池配置，队列根据实际情况配置
+threadpool.index.type: fixed
+threadpool.index.queue_size: 900
+
+#grants ES 30% of it's heap memory for index buffer purpose
+#索引缓冲区大小，索引操作比较多的情况，建议调整到30%左右，提高索引性能
+indices.memory.index_buffer_size: 30%
+
+#limit fielddata, doc values are greatly used, set this value to smaller value is ok 
+#indices.fielddata.cache.size: 25%
+
+# Indexing Settings for Writes
+#索引刷新时间间隔，代表新数据20s后才能被搜索到，一般对实时性要求不是特别高的建议配置成20s-30s，可以优化索引性能
+index.refresh_interval: 20s
+
+index.number_of_shards: 3
+#索引副本数目，对于日志类的数据对可靠性要求没那么高，建议副本设置成0，能显著减少io。如果某些索引需要副本，也可以后续随时动态调整，很方便。
+index.number_of_replicas: 0
+
+#后台merge线程数目，对于机械硬盘，官方建议此数值为1，减少io冲突。如果是SSD，不需要设置此值。
+index.merge.scheduler.max_thread_count: 1
+
+#translog刷新方式，默认是每次索引更新都会fsync刷盘，系统会承受较大的io压力。改成async方式，每5s刷一次盘，显著减少io。当然，我们需要承受丢失5s数据的风险。
+index.translog.durability: "async"
+
+#打开inline script和indexed script开关，注意安全风险！
+script.inline: on
+script.indexed: on
+
+#允许自动创建logstash开头的索引，禁止创建其他索引
+action.auto_create_index: +logstash-*,-*
